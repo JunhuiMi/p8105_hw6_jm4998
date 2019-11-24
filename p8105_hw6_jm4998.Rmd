@@ -1,7 +1,7 @@
 ---
 title: "P8105 Homework 6"
 author: "Junhui Mi"
-date: "2019/11/9"
+date: "2019/11/24"
 output: github_document
 ---
 
@@ -15,6 +15,8 @@ knitr::opts_chunk$set(
 
 library(tidyverse)
 library(ggridges)
+library(modelr)
+library(mgcv)
 
 set.seed(1)
 
@@ -47,7 +49,7 @@ The dataset contains 20 variables and 4342 observations. There is no missing dat
 
 ### Propose a regression model
 
-Bulid the model on a data-driven model-building process: First I put all the variables in my linear regression model.
+Bulid the model on a data-driven model-building process: First I put all variables in my linear regression model.  
 
 ```{r}
 birthweight %>%
@@ -56,7 +58,9 @@ birthweight %>%
   knitr::kable(digits = 3)
 ```
 
-Using significance level alpha = 0.05, I choose variables with p-value < 0.05 and fit them in my model.
+Using significance level alpha = 0.05, I choose variables with p-value < 0.05 and fit them in my model. 
+
+In my model, birthweight is associated with baby’s sex, baby’s head circumference at birth, baby’s length at birth, mother’s weight at delivery, gestational age, mother’s race, number of live births prior to this pregnancy, and mother's average number of cigarettes smoked per day during pregnancy.
 
 ```{r}
 my_model = birthweight %>%
@@ -72,6 +76,8 @@ birthweight %>%
        title = "Plot of model residuals against fitted values")
 ```
 
+Above is a plot of my model residuals against fitted values.
+
 ### Compare my model with other two model
 
 ```{r}
@@ -80,7 +86,36 @@ model_1 = birthweight %>%
 
 model_2 = birthweight %>%
   lm(bwt ~ babysex * bhead * blength, data = .)
+
+cv_df = 
+  crossv_mc(birthweight, 100) %>% 
+  mutate(
+    train = map(train, as_tibble),
+    test = map(test, as_tibble)
+    ) %>%
+  mutate(
+    my_model = map(train, ~ lm(bwt ~ babysex + bhead + blength + delwt + gaweeks + mrace + parity + smoken, data = .x)),
+    model_1 = map(train, ~ lm(bwt ~ blength + gaweeks, data = .x)),
+    model_2 = map(train, ~ lm(bwt ~ babysex * bhead * blength, data = .x))
+    ) %>% 
+  mutate(
+    rmse_my_model = map2_dbl(my_model, test, ~ rmse(model = .x, data = .y)),
+    rmse_model_1 = map2_dbl(model_1, test, ~ rmse(model = .x, data = .y)),
+    rmse_model_2 = map2_dbl(model_2, test, ~ rmse(model = .x, data = .y)))
+
+cv_df %>% 
+  select(starts_with("rmse")) %>% 
+  pivot_longer(
+    everything(),
+    names_to = "model", 
+    values_to = "rmse",
+    names_prefix = "rmse_") %>% 
+  mutate(model = fct_inorder(model)) %>% 
+  ggplot(aes(x = model, y = rmse)) + geom_violin()  +
+  labs(title = "Prediction errors in different models")
 ```
+
+From the plot above we can see that my model has the least RMSE. My model is the best among three models, model_2 ranks second and model_1 ranks third.
 
 # Problem 2
 ```{r}
