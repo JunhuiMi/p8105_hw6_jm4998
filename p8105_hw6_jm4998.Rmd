@@ -118,6 +118,8 @@ cv_df %>%
 From the plot above we can see that my model has the least RMSE. My model is the best among three models, model_2 ranks second and model_1 ranks third.
 
 # Problem 2
+
+### Load data
 ```{r}
 weather_df = 
   rnoaa::meteo_pull_monitors(
@@ -130,6 +132,22 @@ weather_df =
     tmin = tmin / 10,
     tmax = tmax / 10) %>%
   select(name, id, everything())
+```
 
+### Bootstrap
+```{r}
+weather_bootstrap = weather_df %>% 
+  modelr::bootstrap(n = 5000) %>% 
+  mutate(
+    models = map(strap, ~ lm(tmax ~ tmin, data = .x)),
+    results_1 = map(models, broom::glance),
+    results_2 = map(models, broom::tidy),
+    r_squared = map_dbl(.x = results_1, ~.x %>% pull(r.squared)),
+    log_b0_b1 = map_dbl(.x = results_2, ~.x %>% pull(estimate) %>% prod %>% log)) %>%
+  select(.id, r_squared, log_b0_b1)
+```
+
+### Distribution of two estimated quantities
+```{r}
 
 ```
