@@ -159,3 +159,22 @@ weather_bootstrap %>%
   labs(x = expression("log("~hat(beta)[0]~"*"~hat(beta)[1]~")"),
        title = expression("Distribution of log("~hat(beta)[0]~"*"~hat(beta)[1]~")"))
 ```
+
+The distribution of r_squared is a little left-skewed normal with mean around 0.91, and the distribution of log_b0_b1 is a little left-skewed  normal with mean around 2.02.
+
+### Confidence Interval of estimates
+```{r}
+weather_bootstrap %>%
+  pivot_longer(
+    -.id,
+    names_to = "estimates",
+    values_to = "value"
+    ) %>%
+  group_by(estimates) %>%
+  summarize(quantile2.5 = round(quantile(value,0.025), digits = 3),
+            quantile97.5 = round(quantile(value,0.975), digits = 3)) %>%
+  mutate(CI = str_c(quantile2.5, quantile97.5, sep = ",")) %>%
+  knitr::kable(caption = "95% CI of estimates", format = "html", digits = 3)
+```
+
+The 95% confidence interval of log_b0_b1 is (1.966,2.058), and (0.894,0.927) for r_squared.
