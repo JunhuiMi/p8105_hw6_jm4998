@@ -149,5 +149,13 @@ weather_bootstrap = weather_df %>%
 
 ### Distribution of two estimated quantities
 ```{r}
+weather_bootstrap %>%
+  ggplot(aes(x = r_squared)) + geom_density() +
+  labs(x = expression(""~r^2~""),
+       title = expression("Distribution of "~r^2~""))
 
+weather_bootstrap %>%
+  ggplot(aes(x = log_b0_b1)) + geom_density() +
+  labs(x = expression("log("~hat(beta)[0]~"*"~hat(beta)[1]~")"),
+       title = expression("Distribution of log("~hat(beta)[0]~"*"~hat(beta)[1]~")"))
 ```
